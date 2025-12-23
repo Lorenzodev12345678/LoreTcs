@@ -1,6 +1,5 @@
--- Garante que não haja instâncias duplicadas bugando
-if game.CoreGui:FindFirstChild("LoreTCS_Auth") then game.CoreGui:FindFirstChild("LoreTCS_Auth"):Destroy() end
-if game.Players.LocalPlayer.PlayerGui:FindFirstChild("LoreTCS_Auth") then game.Players.LocalPlayer.PlayerGui:FindFirstChild("LoreTCS_Auth"):Destroy() end
+-- [[ LoreTCS - REVISADO E SINCRONIZADO ]]
+-- loadstring(game:HttpGet("https://raw.githubusercontent.com/Lorenzodev12345678/LoreTcs/refs/heads/main/main.lua"))()
 
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -9,78 +8,155 @@ local RunService = game:GetService("RunService")
 local targetBall = nil
 local savedGoalPos = nil
 local correctKey = "LORE-RLK-2025"
-local keyLink = "https://pastebin.com/4PLCpfMM"
+local keyLink = "https://link-da-sua-key.com" -- Troque pelo seu link
 local speedEnabled = false
-local speedValue = 2.2
+local speedValue = 2.3
 
--- [[ CRIAÇÃO DA INTERFACE (FORÇADA NO PLAYERGUI) ]]
-local ScreenGui = Instance.new("ScreenGui")
+-- [[ ANTIBIÓTICO V4: BLINDAGEM ]]
+local function BlindagemTotal()
+    local mt = getrawmetatable(game)
+    local oldIndex = mt.__index
+    setreadonly(mt, false)
+    mt.__index = newcclosure(function(t, k)
+        if not checkcaller() and t:IsA("Humanoid") then
+            if k == "WalkSpeed" then return 16 end
+            if k == "JumpPower" then return 50 end
+        end
+        return oldIndex(t, k)
+    end)
+    hookfunction(player.Kick, newcclosure(function() return nil end))
+    setreadonly(mt, true)
+end
+BlindagemTotal()
+
+-- [[ SELEÇÃO POR CLIQUE COM QUADRADO AZUL ]]
+mouse.Button1Down:Connect(function()
+    local target = mouse.Target
+    if target and target:IsA("BasePart") then
+        if (target.Name:lower():find("ball") or target.Name:lower():find("foot") or target.Size.X < 10) and not target:FindFirstAncestorOfClass("Model"):FindFirstChild("Humanoid") then
+            targetBall = target
+            for _, v in pairs(targetBall:GetChildren()) do
+                if v:IsA("SelectionBox") then v:Destroy() end
+            end
+            local box = Instance.new("SelectionBox")
+            box.Name = "LoreSelection"
+            box.Adornee = targetBall
+            box.Color3 = Color3.fromRGB(0, 170, 255)
+            box.LineThickness = 0.05
+            box.Parent = targetBall
+        end
+    end
+end)
+
+-- [[ SPEED BYPASS ]]
+RunService.Stepped:Connect(function()
+    if speedEnabled and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = player.Character.HumanoidRootPart
+        local hum = player.Character.Humanoid
+        if hum.MoveDirection.Magnitude > 0 then
+            hrp.CFrame = hrp.CFrame + (hum.MoveDirection * (speedValue / 10))
+        end
+    end
+end)
+
+-- [[ INTERFACE ]]
+if pgui:FindFirstChild("LoreTCS_Auth") then pgui:FindFirstChild("LoreTCS_Auth"):Destroy() end
+local ScreenGui = Instance.new("ScreenGui", pgui)
 ScreenGui.Name = "LoreTCS_Auth"
-ScreenGui.Parent = pgui -- Tenta colocar no PlayerGui
 ScreenGui.ResetOnSpawn = false
 
--- Se o PlayerGui falhar (em alguns executores), tenta o CoreGui
-task.spawn(function()
-    if not ScreenGui.Parent then
-        ScreenGui.Parent = game:GetService("CoreGui")
+-- FUNÇÃO DO PAINEL PRINCIPAL (HUB)
+local function OpenLoreTCS()
+    local MainFrame = Instance.new("Frame", ScreenGui)
+    MainFrame.Size = UDim2.new(0, 300, 0, 320)
+    MainFrame.Position = UDim2.new(0.5, -150, 0.5, -160)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    MainFrame.Active = true; MainFrame.Draggable = true 
+    Instance.new("UICorner", MainFrame)
+    Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(0, 255, 100)
+
+    local function AddBtn(name, pos, col, fn)
+        local b = Instance.new("TextButton", MainFrame)
+        b.Size = UDim2.new(0.9, 0, 0, 45); b.Position = pos; b.Text = name
+        b.BackgroundColor3 = col; b.TextColor3 = Color3.fromRGB(255, 255, 255)
+        b.Font = Enum.Font.GothamBold; Instance.new("UICorner", b)
+        b.MouseButton1Click:Connect(function() fn(b) end)
     end
-end)
 
--- [[ TELA DE LOGIN (O FRAME QUE TEM DE APARECER) ]]
+    AddBtn("PÊNALTI 100% (rlk)", UDim2.new(0.05, 0, 0.15, 0), Color3.fromRGB(200, 0, 0), function(btn)
+        if targetBall and savedGoalPos then
+            btn.Text = "GOL!"
+            targetBall.CanCollide = false
+            local bv = Instance.new("BodyVelocity")
+            bv.MaxForce = Vector3.new(1e6, 1e6, 1e6)
+            bv.Velocity = (savedGoalPos - targetBall.Position).Unit * 170
+            bv.Parent = targetBall
+            task.wait(1.2)
+            bv:Destroy()
+            targetBall.CanCollide = true
+            btn.Text = "PÊNALTI 100% (rlk)"
+        end
+    end)
+
+    AddBtn("BOOSTER SKYBOX (FPS)", UDim2.new(0.05, 0, 0.45, 0), Color3.fromRGB(100, 0, 200), function(btn)
+        game:GetService("Lighting").GlobalShadows = false
+        for _, v in pairs(game:GetService("Lighting"):GetChildren()) do
+            if v:IsA("PostProcessEffect") or v:IsA("Atmosphere") or v:IsA("Sky") then v:Destroy() end
+        end
+        btn.Text = "CÉU OTIMIZADO!"
+        btn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+    end)
+
+    AddBtn("SPEED BYPASS: OFF", UDim2.new(0.05, 0, 0.75, 0), Color3.fromRGB(50, 50, 50), function(b)
+        speedEnabled = not speedEnabled
+        b.Text = speedEnabled and "SPEED BYPASS: ON" or "SPEED BYPASS: OFF"
+        b.BackgroundColor3 = speedEnabled and Color3.fromRGB(0, 100, 200) or Color3.fromRGB(50, 50, 50)
+    end)
+end
+
+-- TELA DE SETUP (SALVAR GOL)
+local function StartSetup()
+    local SetupF = Instance.new("Frame", ScreenGui)
+    SetupF.Size = UDim2.new(0, 250, 0, 100); SetupF.Position = UDim2.new(0.5, -125, 0.4, 0)
+    SetupF.BackgroundColor3 = Color3.fromRGB(20, 40, 20); SetupF.Active = true; SetupF.Draggable = true
+    Instance.new("UICorner", SetupF)
+    local S = Instance.new("TextButton", SetupF)
+    S.Size = UDim2.new(0.8, 0, 0, 40); S.Position = UDim2.new(0.1, 0, 0.3, 0); S.Text = "SALVAR GOL (FIQUE NO GOL)"
+    S.MouseButton1Click:Connect(function() 
+        savedGoalPos = player.Character.HumanoidRootPart.Position 
+        SetupF:Destroy() 
+        OpenLoreTCS() -- AQUI ELE ABRE O PAINEL!
+    end)
+    Instance.new("UICorner", S)
+end
+
+-- TELA DE KEY (LOGIN)
 local KeyFrame = Instance.new("Frame", ScreenGui)
-KeyFrame.Size = UDim2.new(0, 300, 0, 250)
-KeyFrame.Position = UDim2.new(0.5, -150, 0.4, 0)
-KeyFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-KeyFrame.Active = true
-KeyFrame.Draggable = true -- Se bugar, tenta desativar isto
+KeyFrame.Size = UDim2.new(0, 300, 0, 250); KeyFrame.Position = UDim2.new(0.5, -150, 0.4, 0)
+KeyFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10); KeyFrame.Active = true; KeyFrame.Draggable = true
 Instance.new("UICorner", KeyFrame)
-Instance.new("UIStroke", KeyFrame).Color = Color3.fromRGB(0, 255, 100)
-
-local Title = Instance.new("TextLabel", KeyFrame)
-Title.Size = UDim2.new(1, 0, 0, 40)
-Title.Text = "LORE TCS - LOGIN"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.BackgroundTransparency = 1
-Title.Font = Enum.Font.GothamBold
 
 local KeyInput = Instance.new("TextBox", KeyFrame)
-KeyInput.Size = UDim2.new(0.8, 0, 0, 40)
-KeyInput.Position = UDim2.new(0.1, 0, 0.25, 0)
-KeyInput.PlaceholderText = "COLE A KEY..."
-KeyInput.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-KeyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-Instance.new("UICorner", KeyInput)
+KeyInput.Size = UDim2.new(0.8, 0, 0, 40); KeyInput.Position = UDim2.new(0.1, 0, 0.2, 0); KeyInput.PlaceholderText = "KEY..."
+KeyInput.BackgroundColor3 = Color3.fromRGB(25, 25, 25); KeyInput.TextColor3 = Color3.fromRGB(255, 255, 255); Instance.new("UICorner", KeyInput)
 
 local CheckBtn = Instance.new("TextButton", KeyFrame)
-CheckBtn.Size = UDim2.new(0.8, 0, 0, 40)
-CheckBtn.Position = UDim2.new(0.1, 0, 0.5, 0)
-CheckBtn.Text = "LOGAR"
-CheckBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 70)
-CheckBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-Instance.new("UICorner", CheckBtn)
+CheckBtn.Size = UDim2.new(0.8, 0, 0, 40); CheckBtn.Position = UDim2.new(0.1, 0, 0.45, 0); CheckBtn.Text = "LOGAR"
+CheckBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 70); CheckBtn.TextColor3 = Color3.fromRGB(255, 255, 255); Instance.new("UICorner", CheckBtn)
 
 local GetKeyBtn = Instance.new("TextButton", KeyFrame)
-GetKeyBtn.Size = UDim2.new(0.8, 0, 0, 40)
-GetKeyBtn.Position = UDim2.new(0.1, 0, 0.75, 0)
-GetKeyBtn.Text = "GET KEY (COPIAR)"
-GetKeyBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-GetKeyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-Instance.new("UICorner", GetKeyBtn)
+GetKeyBtn.Size = UDim2.new(0.8, 0, 0, 40); GetKeyBtn.Position = UDim2.new(0.1, 0, 0.7, 0); GetKeyBtn.Text = "GET KEY"
+GetKeyBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100); GetKeyBtn.TextColor3 = Color3.fromRGB(255, 255, 255); Instance.new("UICorner", GetKeyBtn)
 
--- [[ FUNÇÕES DE CLICK ]]
-GetKeyBtn.MouseButton1Click:Connect(function()
-    if setclipboard then
-        setclipboard(keyLink)
-        GetKeyBtn.Text = "COPIADO!"
+GetKeyBtn.MouseButton1Click:Connect(function() if setclipboard then setclipboard(keyLink) GetKeyBtn.Text = "COPIADO!" task.wait(2) GetKeyBtn.Text = "GET KEY" end end)
+
+CheckBtn.MouseButton1Click:Connect(function() 
+    if KeyInput.Text == correctKey then 
+        KeyFrame:Destroy() 
+        StartSetup() -- CHAMA O SETUP APÓS O LOGIN
     else
-        GetKeyBtn.Text = "VER CONSOLE F9"
-        print(keyLink)
-    end
-    task.wait(2)
-    GetKeyBtn.Text = "GET KEY (COPIAR)"
+        CheckBtn.Text = "KEY INCORRETA!"
+        task.wait(1)
+        CheckBtn.Text = "LOGAR"
+    end 
 end)
-
--- SISTEMA DE SELEÇÃO E OUTROS CONTINUAM ABAIXO...
--- (O resto do teu código entra aqui)
-
-print("LoreTCS: Script Executado, man!")
