@@ -1,4 +1,4 @@
- local player = game.Players.LocalPlayer
+local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
 local pgui = player:WaitForChild("PlayerGui")
 local TweenService = game:GetService("TweenService")
@@ -11,22 +11,35 @@ local oldKick
 oldKick = hookmetamethod(game, "__namecall", function(self, ...)
     local method = getnamecallmethod()
     if not checkcaller() and (method == "Kick" or method == "kick") then
-        print("Tentativa de Kick anulada com sucesso, rlk!")
         return nil
     end
     return oldKick(self, ...)
 end)
 
--- [[ BYPASS DE VELOCIDADE NO HUMANOIDE ]]
-local oldIndex
-oldIndex = hookmetamethod(game, "__index", function(t, k)
-    if not checkcaller() and t:IsA("Humanoid") and (k == "WalkSpeed" or k == "JumpPower") then
-        return 16 
+-- [[ FUNÇÃO DO BOOSTER (DENTRO DO FRAME) ]]
+local function ApplyBooster(btn)
+    btn.Text = "OTIMIZANDO... (VAI TRAVAR)"
+    btn.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
+    task.wait(0.1) -- Delay para atualizar o texto antes do freeze
+    
+    settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+    for _, v in pairs(game:GetDescendants()) do
+        if v:IsA("Part") or v:IsA("MeshPart") or v:IsA("UnionOperation") then
+            v.Material = Enum.Material.SmoothPlastic
+            v.Reflectance = 0
+        elseif v:IsA("Decal") or v:IsA("Texture") then
+            v:Destroy()
+        elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+            v.Enabled = false
+        end
     end
-    return oldIndex(t, k)
-end)
+    
+    btn.Text = "JOGO OTIMIZADO! (FPS UP)"
+    btn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+    print("Booster aplicado, reliquia!")
+end
 
--- [[ FUNÇÃO DE MOVIMENTO SUAVE (ANTI-VELOCITY) ]]
+-- [[ FUNÇÃO MOVIMENTO SUAVE ]]
 local function SmoothMoveBall()
     if targetBall and savedGoalPos then
         targetBall.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
@@ -34,7 +47,6 @@ local function SmoothMoveBall()
         local goal = {CFrame = CFrame.new(savedGoalPos + Vector3.new(0, 2, 0))}
         local tween = TweenService:Create(targetBall, info, goal)
         tween:Play()
-        print("Bola deslizando pro gol, rblx!")
     end
 end
 
@@ -46,11 +58,11 @@ ScreenGui.ResetOnSpawn = false
 -- [[ HUB PRINCIPAL (DRAGGABLE) ]]
 local function OpenLoreTCS()
     local MainFrame = Instance.new("Frame", ScreenGui)
-    MainFrame.Size = UDim2.new(0, 300, 0, 250)
-    MainFrame.Position = UDim2.new(0.5, -150, 0.5, -125)
+    MainFrame.Size = UDim2.new(0, 300, 0, 320)
+    MainFrame.Position = UDim2.new(0.5, -150, 0.5, -160)
     MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
     MainFrame.Active = true 
-    MainFrame.Draggable = true -- Opção para arrastar ativa
+    MainFrame.Draggable = true
     Instance.new("UICorner", MainFrame)
     Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(0, 255, 100)
 
@@ -63,36 +75,41 @@ local function OpenLoreTCS()
         b.TextColor3 = Color3.fromRGB(255, 255, 255)
         b.Font = Enum.Font.GothamBold
         Instance.new("UICorner", b)
-        b.MouseButton1Click:Connect(fn)
+        b.MouseButton1Click:Connect(function() fn(b) end)
     end
 
-    -- SISTEMA DE SELEÇÃO INTELIGENTE (IGNORA O CAMPO)
-    AddBtn("1. CLICAR NA BOLA", UDim2.new(0.05, 0, 0.2, 0), Color3.fromRGB(0, 150, 255), function()
+    AddBtn("1. MARCAR BOLA (CLIQUE)", UDim2.new(0.05, 0, 0.1, 0), Color3.fromRGB(0, 150, 255), function()
         local conn
         conn = mouse.Button1Down:Connect(function()
             local obj = mouse.Target
-            if obj and obj:IsA("BasePart") then
-                -- Filtro: Ignora se o objeto for gigante como o campo
-                if obj.Size.X < 10 and obj.Size.Y < 10 then
-                    targetBall = obj
-                    if targetBall:FindFirstChild("SelectionHighlight") then targetBall.SelectionHighlight:Destroy() end
-                    local h = Instance.new("Highlight", targetBall)
-                    h.Name = "SelectionHighlight"
-                    h.FillColor = Color3.fromRGB(0, 255, 0)
-                    conn:Disconnect()
-                    print("Bola marcada: " .. obj.Name)
-                else
-                    print("Clica na bola, man! Isso ai e o campo.")
-                end
+            if obj and obj:IsA("BasePart") and obj.Size.X < 10 then
+                targetBall = obj
+                if targetBall:FindFirstChild("SelectionHighlight") then targetBall.SelectionHighlight:Destroy() end
+                local h = Instance.new("Highlight", targetBall)
+                h.Name = "SelectionHighlight"
+                h.FillColor = Color3.fromRGB(0, 255, 0)
+                conn:Disconnect()
             end
         end)
     end)
 
-    AddBtn("2. GOL SUAVE (ANTI-BAN)", UDim2.new(0.05, 0, 0.45, 0), Color3.fromRGB(200, 0, 0), SmoothMoveBall)
+    AddBtn("2. GOL SUAVE (ANTI-BAN)", UDim2.new(0.05, 0, 0.3, 0), Color3.fromRGB(200, 0, 0), function() SmoothMoveBall() end)
+    
+    -- SISTEMA DE BOOSTER INTEGRADO NO FRAME
+    AddBtn("ATIVAR BOOSTER (FPS/PING)", UDim2.new(0.05, 0, 0.5, 0), Color3.fromRGB(100, 0, 200), ApplyBooster)
+    
     AddBtn("SPEED 50 (SAFE)", UDim2.new(0.05, 0, 0.7, 0), Color3.fromRGB(0, 100, 200), function() player.Character.Humanoid.WalkSpeed = 50 end)
+    
+    local footer = Instance.new("TextLabel", MainFrame)
+    footer.Size = UDim2.new(1, 0, 0, 20)
+    footer.Position = UDim2.new(0, 0, 0.9, 0)
+    footer.Text = "LoreTCS - Draggable & Anti-Kick"
+    footer.TextColor3 = Color3.fromRGB(100, 100, 100)
+    footer.BackgroundTransparency = 1
+    footer.Font = Enum.Font.Code
 end
 
--- [[ TELA DE SETUP (DRAGGABLE) ]]
+-- [[ TELAS DE SETUP E KEY (DRAGGABLE) ]]
 local function StartSetup()
     local SetupF = Instance.new("Frame", ScreenGui)
     SetupF.Size = UDim2.new(0, 250, 0, 100)
@@ -101,13 +118,11 @@ local function StartSetup()
     SetupF.Active = true
     SetupF.Draggable = true
     Instance.new("UICorner", SetupF)
-    
     local S = Instance.new("TextButton", SetupF)
     S.Size = UDim2.new(0.8, 0, 0, 40)
     S.Position = UDim2.new(0.1, 0, 0.3, 0)
-    S.Text = "SALVAR GOL"
+    S.Text = "SALVAR POSIÇÃO GOL"
     Instance.new("UICorner", S)
-    
     S.MouseButton1Click:Connect(function()
         savedGoalPos = player.Character.HumanoidRootPart.Position
         SetupF:Destroy()
@@ -115,7 +130,6 @@ local function StartSetup()
     end)
 end
 
--- [[ TELA DE KEY (DRAGGABLE) ]]
 local KeyFrame = Instance.new("Frame", ScreenGui)
 KeyFrame.Size = UDim2.new(0, 300, 0, 200)
 KeyFrame.Position = UDim2.new(0.5, -150, 0.4, 0)
@@ -128,8 +142,8 @@ local KeyInput = Instance.new("TextBox", KeyFrame)
 KeyInput.Size = UDim2.new(0.8, 0, 0, 40)
 KeyInput.Position = UDim2.new(0.1, 0, 0.35, 0)
 KeyInput.PlaceholderText = "INSIRA A KEY..."
-KeyInput.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 KeyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+KeyInput.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 Instance.new("UICorner", KeyInput)
 
 local CheckBtn = Instance.new("TextButton", KeyFrame)
@@ -137,7 +151,6 @@ CheckBtn.Size = UDim2.new(0.8, 0, 0, 40)
 CheckBtn.Position = UDim2.new(0.1, 0, 0.6, 0)
 CheckBtn.Text = "LOGAR"
 CheckBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 80)
-CheckBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 Instance.new("UICorner", CheckBtn)
 
 CheckBtn.MouseButton1Click:Connect(function()
