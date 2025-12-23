@@ -1,4 +1,4 @@
--- [[ LoreTCS - VERSÃO TPS GOD MODE ]]
+-- [[ LoreTCS - VERSÃO FINAL TPS GOD MODE ]]
 -- loadstring(game:HttpGet("https://raw.githubusercontent.com/Lorenzodev12345678/LoreTcs/refs/heads/main/main.lua"))()
 
 local player = game.Players.LocalPlayer
@@ -8,11 +8,11 @@ local RunService = game:GetService("RunService")
 local targetBall = nil
 local savedGoalPos = nil
 local correctKey = "LORE-RLK-2025"
-local keyLink = "https://link-da-sua-key.com"
+local keyLink = "https://pastebin.com/4PLCpfMM"
 local speedEnabled = false
 local speedValue = 2.3
 
--- [[ ANTIBIÓTICO V4: BLINDAGEM ]]
+-- [[ ANTIBIÓTICO V4: BLINDAGEM CONTRA KICK ]]
 local function BlindagemTotal()
     local mt = getrawmetatable(game)
     local oldIndex = mt.__index
@@ -29,9 +29,8 @@ local function BlindagemTotal()
 end
 BlindagemTotal()
 
--- [[ FUNÇÃO PARA BUSCAR A BOLA EM QUALQUER LUGAR ]]
+-- [[ BUSCA GLOBAL PELA BOLA TPS ]]
 local function FindTPSBall()
-    -- Procura no Workspace e em todas as pastas
     for _, obj in pairs(game:GetDescendants()) do
         if obj:IsA("BasePart") and (obj.Name == "TPS" or obj.Name == "Ball") then
             return obj
@@ -40,32 +39,23 @@ local function FindTPSBall()
     return nil
 end
 
--- [[ SELEÇÃO TPS COM QUADRADO AZUL ]]
+-- [[ SELEÇÃO COM QUADRADO AZUL AO CLICAR ]]
 mouse.Button1Down:Connect(function()
     local target = mouse.Target
-    -- Se clicar em algo ou se a gente forçar a busca
-    if target then
-        if target.Name:upper():find("TPS") or target.Name:lower():find("ball") then
+    if target and target:IsA("BasePart") then
+        if (target.Name:upper():find("TPS") or target.Name:lower():find("ball")) and not target:FindFirstAncestorOfClass("Model"):FindFirstChild("Humanoid") then
             targetBall = target
-        else
-            -- Se não clicar direto, tenta achar pelo nome globalmente
-            targetBall = FindTPSBall()
+            for _, v in pairs(targetBall:GetChildren()) do
+                if v:IsA("SelectionBox") then v:Destroy() end
+            end
+            local box = Instance.new("SelectionBox")
+            box.Name = "LoreSelection"
+            box.Adornee = targetBall
+            box.Color3 = Color3.fromRGB(0, 170, 255)
+            box.LineThickness = 0.05
+            box.Parent = targetBall
+            print("TPS Selecionada, rlk!")
         end
-    end
-
-    if targetBall then
-        -- Limpa seleções antigas
-        for _, v in pairs(targetBall:GetChildren()) do
-            if v:IsA("SelectionBox") then v:Destroy() end
-        end
-        -- Cria o Quadrado Azul
-        local box = Instance.new("SelectionBox")
-        box.Name = "LoreSelection"
-        box.Adornee = targetBall
-        box.Color3 = Color3.fromRGB(0, 170, 255)
-        box.LineThickness = 0.05
-        box.Parent = targetBall
-        print("TPS Encontrada e Marcada, rlk!")
     end
 end)
 
@@ -80,13 +70,13 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- [[ INTERFACE ]]
+-- [[ INTERFACE PRINCIPAL ]]
 if pgui:FindFirstChild("LoreTCS_Auth") then pgui:FindFirstChild("LoreTCS_Auth"):Destroy() end
 local ScreenGui = Instance.new("ScreenGui", pgui)
 ScreenGui.Name = "LoreTCS_Auth"
 ScreenGui.ResetOnSpawn = false
 
--- HUB PRINCIPAL
+-- HUB DE FUNÇÕES
 local function OpenLoreTCS()
     local MainFrame = Instance.new("Frame", ScreenGui)
     MainFrame.Size = UDim2.new(0, 300, 0, 320)
@@ -104,26 +94,30 @@ local function OpenLoreTCS()
         b.MouseButton1Click:Connect(function() fn(b) end)
     end
 
-    -- TELEPORTE DA BOLA (PÊNALTI 100%)
-    AddBtn("TELEPORT BALL TO GOAL", UDim2.new(0.05, 0, 0.15, 0), Color3.fromRGB(200, 0, 0), function(btn)
-        -- Tenta re-identificar a bola se ela sumiu
+    -- TELEPORTE PERSISTENTE (ARRUMADO)
+    AddBtn("TELEPORT BALL (FORCED GOL)", UDim2.new(0.05, 0, 0.15, 0), Color3.fromRGB(200, 0, 0), function(btn)
         if not targetBall then targetBall = FindTPSBall() end
         
         if targetBall and savedGoalPos then
-            btn.Text = "TELEPORTANDO..."
-            -- Desativa colisão para não bater em nada no caminho
-            targetBall.CanCollide = false
-            -- Teleporte instantâneo via CFrame
-            targetBall.CFrame = CFrame.new(savedGoalPos)
-            task.wait(0.1)
-            targetBall.CanCollide = true
-            btn.Text = "GOL FEITO! (rlk)"
-            task.wait(1)
-            btn.Text = "TELEPORT BALL TO GOAL"
+            btn.Text = "FORÇANDO..."
+            -- Faz o teleporte 20 vezes seguidas para o servidor não puxar de volta
+            task.spawn(function()
+                for i = 1, 20 do
+                    targetBall.CanCollide = false
+                    targetBall.Velocity = Vector3.new(0,0,0)
+                    targetBall.RotVelocity = Vector3.new(0,0,0)
+                    targetBall.CFrame = CFrame.new(savedGoalPos)
+                    RunService.RenderStepped:Wait()
+                end
+                targetBall.CanCollide = true
+                btn.Text = "GOL CONFIRMADO! rlk"
+                task.wait(1)
+                btn.Text = "TELEPORT BALL (FORCED GOL)"
+            end)
         else
-            btn.Text = "BOLA NÃO ENCONTRADA!"
+            btn.Text = "ERRO: SEM BOLA/GOL"
             task.wait(1)
-            btn.Text = "TELEPORT BALL TO GOAL"
+            btn.Text = "TELEPORT BALL (FORCED GOL)"
         end
     end)
 
@@ -132,7 +126,7 @@ local function OpenLoreTCS()
         for _, v in pairs(game:GetService("Lighting"):GetChildren()) do
             if v:IsA("PostProcessEffect") or v:IsA("Atmosphere") or v:IsA("Sky") then v:Destroy() end
         end
-        btn.Text = "TPS LISO!"
+        btn.Text = "FPS UP! rlk"
         btn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
     end)
 
@@ -159,7 +153,7 @@ local function StartSetup()
     Instance.new("UICorner", S)
 end
 
--- LOGIN
+-- TELA DE LOGIN
 local KeyFrame = Instance.new("Frame", ScreenGui)
 KeyFrame.Size = UDim2.new(0, 300, 0, 250); KeyFrame.Position = UDim2.new(0.5, -150, 0.4, 0)
 KeyFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10); KeyFrame.Active = true; KeyFrame.Draggable = true
