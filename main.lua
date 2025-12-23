@@ -9,7 +9,7 @@ local RunService = game:GetService("RunService")
 local targetBall = nil
 local savedGoalPos = nil
 local correctKey = "LORE-RLK-2025"
-local keyLink = "https://link-da-sua-key.com"
+local keyLink = "https://pastebin.com/4PLCpfMM"
 local speedEnabled = false
 local speedValue = 2.2
 
