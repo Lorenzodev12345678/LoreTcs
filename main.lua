@@ -7,9 +7,9 @@ local targetBall = nil
 local savedGoalPos = nil
 local correctKey = "LORE-RLK-2025"
 local speedEnabled = false
-local speedValue = 2.2 -- Ajustado para ser rápido mas seguro
+local speedValue = 2.2
 
--- [[ ANTIBIÓTICO V4: BLINDAGEM DE MEMÓRIA ]]
+-- [[ ANTIBIÓTICO V4: BLINDAGEM ]]
 local function BlindagemTotal()
     local mt = getrawmetatable(game)
     local oldIndex = mt.__index
@@ -26,6 +26,22 @@ local function BlindagemTotal()
 end
 BlindagemTotal()
 
+-- [[ SELEÇÃO POR MOUSE CLICK (IGNORA JOGADORES) ]]
+mouse.Button1Down:Connect(function()
+    local target = mouse.Target
+    if target and target:IsA("BasePart") then
+        -- Filtro: Se for a bola ou algo pequeno/redondo que não seja parte de um player
+        if (target.Name:lower():find("ball") or target.Name:lower():find("foot")) and not target:FindFirstAncestorOfClass("Model"):FindFirstChild("Humanoid") then
+            targetBall = target
+            if targetBall:FindFirstChild("SelectionHighlight") then targetBall.SelectionHighlight:Destroy() end
+            local h = Instance.new("Highlight", targetBall)
+            h.Name = "SelectionHighlight"
+            h.FillColor = Color3.fromRGB(0, 255, 0)
+            print("Bola Selecionada via MouseClick, rlk!")
+        end
+    end
+end)
+
 -- [[ SPEED BYPASS (CFRAME) ]]
 RunService.Stepped:Connect(function()
     if speedEnabled and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
@@ -37,29 +53,21 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- [[ SISTEMA DE PÊNALTI 100% (CAN COLLIDE OFF) ]]
+-- [[ PÊNALTI 100% (CAN COLLIDE OFF) ]]
 local function Penalty100(btn)
     if targetBall and savedGoalPos then
         btn.Text = "FAZENDO GOL..."
-        btn.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
-        
-        -- DESATIVA COLISÃO (Atravessa o Goleiro)
         targetBall.CanCollide = false
-        
-        -- Aplica Força Física Fantasma Direcionada
         local bv = Instance.new("BodyVelocity")
         bv.MaxForce = Vector3.new(1e6, 1e6, 1e6)
-        bv.Velocity = (savedGoalPos - targetBall.Position).Unit * 150 -- Velocidade de chute forte
+        bv.Velocity = (savedGoalPos - targetBall.Position).Unit * 160
         bv.Parent = targetBall
-        
-        task.wait(1.5)
-        
+        task.wait(1.2)
         bv:Destroy()
-        targetBall.CanCollide = true -- Ativa de volta pra não bugar o jogo
+        targetBall.CanCollide = true
         btn.Text = "2. PÊNALTI 100% (rlk)"
-        btn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
     else
-        btn.Text = "MARQUE A BOLA ANTES!"
+        btn.Text = "CLIQUE NA BOLA PRIMEIRO!"
         task.wait(1)
         btn.Text = "2. PÊNALTI 100% (rlk)"
     end
@@ -67,14 +75,13 @@ end
 
 -- [[ BOOSTER SKYBOX ]]
 local function BoostSkybox(btn)
-    btn.Text = "OTIMIZANDO..."
     game:GetService("Lighting").GlobalShadows = false
     for _, v in pairs(game:GetService("Lighting"):GetChildren()) do
         if v:IsA("Sky") or v:IsA("Atmosphere") then v:Destroy() end
     end
     local s = Instance.new("Sky", game:GetService("Lighting"))
     s.SkyboxBk = Color3.fromRGB(0,0,0)
-    btn.Text = "CÉU LISO! (FPS UP)"
+    btn.Text = "CÉU OTIMIZADO!"
     btn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
 end
 
@@ -86,8 +93,8 @@ ScreenGui.ResetOnSpawn = false
 -- [[ HUB PRINCIPAL (DRAGGABLE) ]]
 local function OpenLoreTCS()
     local MainFrame = Instance.new("Frame", ScreenGui)
-    MainFrame.Size = UDim2.new(0, 300, 0, 340)
-    MainFrame.Position = UDim2.new(0.5, -150, 0.5, -170)
+    MainFrame.Size = UDim2.new(0, 300, 0, 300)
+    MainFrame.Position = UDim2.new(0.5, -150, 0.5, -150)
     MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
     MainFrame.Active = true 
     MainFrame.Draggable = true 
@@ -96,7 +103,7 @@ local function OpenLoreTCS()
 
     local function AddBtn(name, pos, col, fn)
         local b = Instance.new("TextButton", MainFrame)
-        b.Size = UDim2.new(0.9, 0, 0, 40)
+        b.Size = UDim2.new(0.9, 0, 0, 45)
         b.Position = pos
         b.Text = name
         b.BackgroundColor3 = col
@@ -106,21 +113,15 @@ local function OpenLoreTCS()
         b.MouseButton1Click:Connect(function() fn(b) end)
     end
 
-    AddBtn("1. MARCAR BOLA (CLIQUE)", UDim2.new(0.05, 0, 0.1, 0), Color3.fromRGB(0, 150, 255), function()
-        local conn
-        conn = mouse.Button1Down:Connect(function()
-            local obj = mouse.Target
-            if obj and obj:IsA("BasePart") and obj.Size.X < 10 then
-                targetBall = obj
-                local h = Instance.new("Highlight", targetBall)
-                h.FillColor = Color3.fromRGB(0, 255, 0)
-                conn:Disconnect()
-            end
-        end)
-    end)
+    -- INFO LABEL
+    local info = Instance.new("TextLabel", MainFrame)
+    info.Size = UDim2.new(1, 0, 0, 30)
+    info.Text = "CLIQUE NA BOLA PARA MARCAR"
+    info.TextColor3 = Color3.fromRGB(0, 150, 255)
+    info.BackgroundTransparency = 1
 
-    AddBtn("2. PÊNALTI 100% (rlk)", UDim2.new(0.05, 0, 0.3, 0), Color3.fromRGB(200, 0, 0), Penalty100)
-    AddBtn("BOOSTER SKYBOX (FPS)", UDim2.new(0.05, 0, 0.5, 0), Color3.fromRGB(100, 0, 200), BoostSkybox)
+    AddBtn("2. PÊNALTI 100% (rlk)", UDim2.new(0.05, 0, 0.2, 0), Color3.fromRGB(200, 0, 0), Penalty100)
+    AddBtn("BOOSTER SKYBOX (FPS)", UDim2.new(0.05, 0, 0.45, 0), Color3.fromRGB(100, 0, 200), BoostSkybox)
     
     AddBtn("SPEED BYPASS: OFF", UDim2.new(0.05, 0, 0.7, 0), Color3.fromRGB(50, 50, 50), function(b)
         speedEnabled = not speedEnabled
