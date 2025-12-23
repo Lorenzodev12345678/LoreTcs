@@ -1,7 +1,7 @@
 local player = game.Players.LocalPlayer
 local pgui = player:WaitForChild("PlayerGui")
 local savedGoalPos = nil
-local correctKey = "LORE-RLK-2025" 
+local correctKey = "LORE-RLK-2025"
 local keyLink = "https://pastebin.com/n7nB6mpX"
 
 if pgui:FindFirstChild("LoreTCS_Auth") then pgui:FindFirstChild("LoreTCS_Auth"):Destroy() end
@@ -34,7 +34,6 @@ KeyFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 KeyFrame.Active = true
 KeyFrame.Draggable = true
 Instance.new("UICorner", KeyFrame)
-
 local KStroke = Instance.new("UIStroke", KeyFrame)
 KStroke.Color = Color3.fromRGB(0, 255, 100)
 KStroke.Thickness = 2
@@ -49,7 +48,7 @@ KTitle.BackgroundTransparency = 1
 local KeyInput = Instance.new("TextBox", KeyFrame)
 KeyInput.Size = UDim2.new(0.8, 0, 0, 40)
 KeyInput.Position = UDim2.new(0.1, 0, 0.35, 0)
-KeyInput.PlaceholderText = "KEY..."
+KeyInput.PlaceholderText = "INSIRA A KEY..."
 KeyInput.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 KeyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 Instance.new("UICorner", KeyInput)
@@ -70,10 +69,9 @@ GetKeyBtn.Text = "PEGAR KEY"
 GetKeyBtn.BackgroundTransparency = 1
 GetKeyBtn.TextColor3 = Color3.fromRGB(0, 180, 255)
 GetKeyBtn.TextSize = 12
-
 GetKeyBtn.MouseButton1Click:Connect(function()
     setclipboard(keyLink)
-    GetKeyBtn.Text = "COPIADO!"
+    GetKeyBtn.Text = "LINK COPIADO!"
     task.wait(2)
     GetKeyBtn.Text = "PEGAR KEY"
 end)
@@ -95,10 +93,9 @@ local function OpenLoreTCS()
     IconBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     IconBtn.Draggable = true
     Instance.new("UICorner", IconBtn).CornerRadius = UDim.new(1, 0)
-
     IconBtn.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
 
-    local function Add(name, pos, col, fn)
+    local function AddBtn(name, pos, col, fn)
         local b = Instance.new("TextButton", MainFrame)
         b.Size = UDim2.new(0.9, 0, 0, 40)
         b.Position = pos
@@ -110,9 +107,9 @@ local function OpenLoreTCS()
         b.MouseButton1Click:Connect(fn)
     end
 
-    Add("GOAL TELEPORT", UDim2.new(0.05, 0, 0.25, 0), Color3.fromRGB(200, 0, 0), TeleportBall)
-    Add("SPEED 100", UDim2.new(0.05, 0, 0.45, 0), Color3.fromRGB(0, 100, 200), function() player.Character.Humanoid.WalkSpeed = 100 end)
-    Add("JUMP 120", UDim2.new(0.05, 0, 0.65, 0), Color3.fromRGB(0, 150, 0), function() player.Character.Humanoid.JumpPower = 120 end)
+    AddBtn("GOAL TELEPORT", UDim2.new(0.05, 0, 0.25, 0), Color3.fromRGB(200, 0, 0), TeleportBall)
+    AddBtn("SPEED 100", UDim2.new(0.05, 0, 0.45, 0), Color3.fromRGB(0, 100, 200), function() player.Character.Humanoid.WalkSpeed = 100 end)
+    AddBtn("JUMP 120", UDim2.new(0.05, 0, 0.65, 0), Color3.fromRGB(0, 150, 0), function() player.Character.Humanoid.JumpPower = 120 end)
 end
 
 local function StartSetup()
@@ -128,6 +125,7 @@ local function StartSetup()
     S.Position = UDim2.new(0.1, 0, 0.5, 0)
     S.Text = "SALVAR GOL"
     S.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    S.Font = Enum.Font.GothamBold
     Instance.new("UICorner", S)
 
     S.MouseButton1Click:Connect(function()
@@ -141,7 +139,8 @@ CheckBtn.MouseButton1Click:Connect(function()
     if KeyInput.Text == correctKey then
         StartSetup()
     else
-        KeyInput.PlaceholderText = "ERRO!"
         KeyInput.Text = ""
+        KeyInput.PlaceholderText = "KEY INCORRETA!"
     end
 end)
+
