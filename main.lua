@@ -1,4 +1,4 @@
--- [[ LoreTCS - REVISADO E SINCRONIZADO ]]
+-- [[ LoreTCS - VERSÃO TPS GOD MODE ]]
 -- loadstring(game:HttpGet("https://raw.githubusercontent.com/Lorenzodev12345678/LoreTcs/refs/heads/main/main.lua"))()
 
 local player = game.Players.LocalPlayer
@@ -8,7 +8,7 @@ local RunService = game:GetService("RunService")
 local targetBall = nil
 local savedGoalPos = nil
 local correctKey = "LORE-RLK-2025"
-local keyLink = "https://link-da-sua-key.com" -- Troque pelo seu link
+local keyLink = "https://link-da-sua-key.com"
 local speedEnabled = false
 local speedValue = 2.3
 
@@ -29,26 +29,47 @@ local function BlindagemTotal()
 end
 BlindagemTotal()
 
--- [[ SELEÇÃO POR CLIQUE COM QUADRADO AZUL ]]
+-- [[ FUNÇÃO PARA BUSCAR A BOLA EM QUALQUER LUGAR ]]
+local function FindTPSBall()
+    -- Procura no Workspace e em todas as pastas
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("BasePart") and (obj.Name == "TPS" or obj.Name == "Ball") then
+            return obj
+        end
+    end
+    return nil
+end
+
+-- [[ SELEÇÃO TPS COM QUADRADO AZUL ]]
 mouse.Button1Down:Connect(function()
     local target = mouse.Target
-    if target and target:IsA("BasePart") then
-        if (target.Name:lower():find("ball") or target.Name:lower():find("foot") or target.Size.X < 10) and not target:FindFirstAncestorOfClass("Model"):FindFirstChild("Humanoid") then
+    -- Se clicar em algo ou se a gente forçar a busca
+    if target then
+        if target.Name:upper():find("TPS") or target.Name:lower():find("ball") then
             targetBall = target
-            for _, v in pairs(targetBall:GetChildren()) do
-                if v:IsA("SelectionBox") then v:Destroy() end
-            end
-            local box = Instance.new("SelectionBox")
-            box.Name = "LoreSelection"
-            box.Adornee = targetBall
-            box.Color3 = Color3.fromRGB(0, 170, 255)
-            box.LineThickness = 0.05
-            box.Parent = targetBall
+        else
+            -- Se não clicar direto, tenta achar pelo nome globalmente
+            targetBall = FindTPSBall()
         end
+    end
+
+    if targetBall then
+        -- Limpa seleções antigas
+        for _, v in pairs(targetBall:GetChildren()) do
+            if v:IsA("SelectionBox") then v:Destroy() end
+        end
+        -- Cria o Quadrado Azul
+        local box = Instance.new("SelectionBox")
+        box.Name = "LoreSelection"
+        box.Adornee = targetBall
+        box.Color3 = Color3.fromRGB(0, 170, 255)
+        box.LineThickness = 0.05
+        box.Parent = targetBall
+        print("TPS Encontrada e Marcada, rlk!")
     end
 end)
 
--- [[ SPEED BYPASS ]]
+-- [[ SPEED BYPASS (CFRAME) ]]
 RunService.Stepped:Connect(function()
     if speedEnabled and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
         local hrp = player.Character.HumanoidRootPart
@@ -65,7 +86,7 @@ local ScreenGui = Instance.new("ScreenGui", pgui)
 ScreenGui.Name = "LoreTCS_Auth"
 ScreenGui.ResetOnSpawn = false
 
--- FUNÇÃO DO PAINEL PRINCIPAL (HUB)
+-- HUB PRINCIPAL
 local function OpenLoreTCS()
     local MainFrame = Instance.new("Frame", ScreenGui)
     MainFrame.Size = UDim2.new(0, 300, 0, 320)
@@ -83,27 +104,35 @@ local function OpenLoreTCS()
         b.MouseButton1Click:Connect(function() fn(b) end)
     end
 
-    AddBtn("PÊNALTI 100% (rlk)", UDim2.new(0.05, 0, 0.15, 0), Color3.fromRGB(200, 0, 0), function(btn)
+    -- TELEPORTE DA BOLA (PÊNALTI 100%)
+    AddBtn("TELEPORT BALL TO GOAL", UDim2.new(0.05, 0, 0.15, 0), Color3.fromRGB(200, 0, 0), function(btn)
+        -- Tenta re-identificar a bola se ela sumiu
+        if not targetBall then targetBall = FindTPSBall() end
+        
         if targetBall and savedGoalPos then
-            btn.Text = "GOL!"
+            btn.Text = "TELEPORTANDO..."
+            -- Desativa colisão para não bater em nada no caminho
             targetBall.CanCollide = false
-            local bv = Instance.new("BodyVelocity")
-            bv.MaxForce = Vector3.new(1e6, 1e6, 1e6)
-            bv.Velocity = (savedGoalPos - targetBall.Position).Unit * 170
-            bv.Parent = targetBall
-            task.wait(1.2)
-            bv:Destroy()
+            -- Teleporte instantâneo via CFrame
+            targetBall.CFrame = CFrame.new(savedGoalPos)
+            task.wait(0.1)
             targetBall.CanCollide = true
-            btn.Text = "PÊNALTI 100% (rlk)"
+            btn.Text = "GOL FEITO! (rlk)"
+            task.wait(1)
+            btn.Text = "TELEPORT BALL TO GOAL"
+        else
+            btn.Text = "BOLA NÃO ENCONTRADA!"
+            task.wait(1)
+            btn.Text = "TELEPORT BALL TO GOAL"
         end
     end)
 
-    AddBtn("BOOSTER SKYBOX (FPS)", UDim2.new(0.05, 0, 0.45, 0), Color3.fromRGB(100, 0, 200), function(btn)
+    AddBtn("BOOSTER FPS (TPS LISO)", UDim2.new(0.05, 0, 0.45, 0), Color3.fromRGB(100, 0, 200), function(btn)
         game:GetService("Lighting").GlobalShadows = false
         for _, v in pairs(game:GetService("Lighting"):GetChildren()) do
             if v:IsA("PostProcessEffect") or v:IsA("Atmosphere") or v:IsA("Sky") then v:Destroy() end
         end
-        btn.Text = "CÉU OTIMIZADO!"
+        btn.Text = "TPS LISO!"
         btn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
     end)
 
@@ -114,30 +143,30 @@ local function OpenLoreTCS()
     end)
 end
 
--- TELA DE SETUP (SALVAR GOL)
+-- SETUP POSIÇÃO DO GOL
 local function StartSetup()
     local SetupF = Instance.new("Frame", ScreenGui)
     SetupF.Size = UDim2.new(0, 250, 0, 100); SetupF.Position = UDim2.new(0.5, -125, 0.4, 0)
     SetupF.BackgroundColor3 = Color3.fromRGB(20, 40, 20); SetupF.Active = true; SetupF.Draggable = true
     Instance.new("UICorner", SetupF)
     local S = Instance.new("TextButton", SetupF)
-    S.Size = UDim2.new(0.8, 0, 0, 40); S.Position = UDim2.new(0.1, 0, 0.3, 0); S.Text = "SALVAR GOL (FIQUE NO GOL)"
+    S.Size = UDim2.new(0.8, 0, 0, 40); S.Position = UDim2.new(0.1, 0, 0.3, 0); S.Text = "SALVAR POSIÇÃO GOL"
     S.MouseButton1Click:Connect(function() 
         savedGoalPos = player.Character.HumanoidRootPart.Position 
         SetupF:Destroy() 
-        OpenLoreTCS() -- AQUI ELE ABRE O PAINEL!
+        OpenLoreTCS() 
     end)
     Instance.new("UICorner", S)
 end
 
--- TELA DE KEY (LOGIN)
+-- LOGIN
 local KeyFrame = Instance.new("Frame", ScreenGui)
 KeyFrame.Size = UDim2.new(0, 300, 0, 250); KeyFrame.Position = UDim2.new(0.5, -150, 0.4, 0)
 KeyFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10); KeyFrame.Active = true; KeyFrame.Draggable = true
 Instance.new("UICorner", KeyFrame)
 
 local KeyInput = Instance.new("TextBox", KeyFrame)
-KeyInput.Size = UDim2.new(0.8, 0, 0, 40); KeyInput.Position = UDim2.new(0.1, 0, 0.2, 0); KeyInput.PlaceholderText = "KEY..."
+KeyInput.Size = UDim2.new(0.8, 0, 0, 40); KeyInput.Position = UDim2.new(0.1, 0, 0.2, 0); KeyInput.PlaceholderText = "COLE A KEY..."
 KeyInput.BackgroundColor3 = Color3.fromRGB(25, 25, 25); KeyInput.TextColor3 = Color3.fromRGB(255, 255, 255); Instance.new("UICorner", KeyInput)
 
 local CheckBtn = Instance.new("TextButton", KeyFrame)
@@ -151,12 +180,5 @@ GetKeyBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100); GetKeyBtn.TextColor3
 GetKeyBtn.MouseButton1Click:Connect(function() if setclipboard then setclipboard(keyLink) GetKeyBtn.Text = "COPIADO!" task.wait(2) GetKeyBtn.Text = "GET KEY" end end)
 
 CheckBtn.MouseButton1Click:Connect(function() 
-    if KeyInput.Text == correctKey then 
-        KeyFrame:Destroy() 
-        StartSetup() -- CHAMA O SETUP APÓS O LOGIN
-    else
-        CheckBtn.Text = "KEY INCORRETA!"
-        task.wait(1)
-        CheckBtn.Text = "LOGAR"
-    end 
+    if KeyInput.Text == correctKey then KeyFrame:Destroy(); StartSetup() end 
 end)
