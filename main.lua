@@ -6,63 +6,91 @@ local targetBall = nil
 local savedGoalPos = nil
 local correctKey = "LORE-RLK-2025"
 
--- [[ ANTIBIÓTICO: ANULADOR DE KICK SUPREMO ]]
-local oldKick
-oldKick = hookmetamethod(game, "__namecall", function(self, ...)
-    local method = getnamecallmethod()
-    if not checkcaller() and (method == "Kick" or method == "kick") then
-        return nil
-    end
-    return oldKick(self, ...)
-end)
-
--- [[ FUNÇÃO DO BOOSTER (DENTRO DO FRAME) ]]
-local function ApplyBooster(btn)
-    btn.Text = "OTIMIZANDO... (VAI TRAVAR)"
-    btn.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
-    task.wait(0.1) -- Delay para atualizar o texto antes do freeze
+-- [[ ANTIBIÓTICO V2: BYPASS DE KICK REFORÇADO ]]
+local function BlindagemTotal()
+    local mt = getrawmetatable(game)
+    local oldNamecall = mt.__namecall
+    setreadonly(mt, false)
     
-    settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
-    for _, v in pairs(game:GetDescendants()) do
-        if v:IsA("Part") or v:IsA("MeshPart") or v:IsA("UnionOperation") then
-            v.Material = Enum.Material.SmoothPlastic
-            v.Reflectance = 0
-        elseif v:IsA("Decal") or v:IsA("Texture") then
+    mt.__namecall = newcclosure(function(self, ...)
+        local method = getnamecallmethod()
+        -- Bloqueia tentativas de Kick via Namecall (Scripts Locais)
+        if not checkcaller() and (method == "Kick" or method == "kick") then
+            warn("LoreTCS: Tentativa de Kick interceptada!")
+            return nil
+        end
+        return oldNamecall(self, ...)
+    end)
+    
+    -- Bloqueia a função Kick diretamente no objeto Player (Bypass de Hook)
+    local oldKick
+    oldKick = hookfunction(player.Kick, newcclosure(function(self, ...)
+        return nil
+    end))
+    
+    setreadonly(mt, true)
+end
+BlindagemTotal()
+
+-- [[ BOOSTER DE SKYBOX & ILUMINAÇÃO (FPS UP) ]]
+-- Mantém as texturas, mas remove o peso do céu e sombras
+local function BoostSkybox(btn)
+    btn.Text = "LIMPANDO CÉU..."
+    btn.BackgroundColor3 = Color3.fromRGB(150, 0, 255)
+    task.wait(0.2) -- Delay para evitar crash no processamento
+
+    local lighting = game:GetService("Lighting")
+    lighting.GlobalShadows = false -- Desativa sombras pesadas
+    lighting.Brightness = 2
+    lighting.FogEnd = 9e9 -- Remove neblina
+    
+    -- Limpa elementos pesados da iluminação sem tocar nos blocos
+    for _, v in pairs(lighting:GetChildren()) do
+        if v:IsA("Sky") or v:IsA("BloomEffect") or v:IsA("BlurEffect") or v:IsA("SunRaysEffect") or v:IsA("Atmosphere") then
             v:Destroy()
-        elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
-            v.Enabled = false
         end
     end
     
-    btn.Text = "JOGO OTIMIZADO! (FPS UP)"
+    -- Adiciona um fundo sólido leve
+    local simpleSky = Instance.new("Sky", lighting)
+    simpleSky.SkyboxBk = Color3.fromRGB(20, 20, 20)
+    simpleSky.SkyboxDn = Color3.fromRGB(20, 20, 20)
+    simpleSky.SkyboxFt = Color3.fromRGB(20, 20, 20)
+    simpleSky.SkyboxLf = Color3.fromRGB(20, 20, 20)
+    simpleSky.SkyboxRt = Color3.fromRGB(20, 20, 20)
+    simpleSky.SkyboxUp = Color3.fromRGB(20, 20, 20)
+    simpleSky.SunAngularSize = 0
+    
+    btn.Text = "CÉU OTIMIZADO! (rlk)"
     btn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-    print("Booster aplicado, reliquia!")
+    print("Otimização de Skybox aplicada, man!")
 end
 
--- [[ FUNÇÃO MOVIMENTO SUAVE ]]
+-- [[ FUNÇÃO MOVIMENTO SUAVE (ANTI-VELOCITY) ]]
 local function SmoothMoveBall()
     if targetBall and savedGoalPos then
         targetBall.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-        local info = TweenInfo.new(0.8, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+        -- Tempo de 1.2s para ser ainda mais seguro contra Anti-Velocity
+        local info = TweenInfo.new(1.2, Enum.EasingStyle.Linear) 
         local goal = {CFrame = CFrame.new(savedGoalPos + Vector3.new(0, 2, 0))}
         local tween = TweenService:Create(targetBall, info, goal)
         tween:Play()
     end
 end
 
+-- [[ INTERFACE PRINCIPAL ]]
 if pgui:FindFirstChild("LoreTCS_Auth") then pgui:FindFirstChild("LoreTCS_Auth"):Destroy() end
 local ScreenGui = Instance.new("ScreenGui", pgui)
 ScreenGui.Name = "LoreTCS_Auth"
 ScreenGui.ResetOnSpawn = false
 
--- [[ HUB PRINCIPAL (DRAGGABLE) ]]
 local function OpenLoreTCS()
     local MainFrame = Instance.new("Frame", ScreenGui)
     MainFrame.Size = UDim2.new(0, 300, 0, 320)
     MainFrame.Position = UDim2.new(0.5, -150, 0.5, -160)
     MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
     MainFrame.Active = true 
-    MainFrame.Draggable = true
+    MainFrame.Draggable = true -- Opção de arrastar ativa
     Instance.new("UICorner", MainFrame)
     Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(0, 255, 100)
 
@@ -82,6 +110,7 @@ local function OpenLoreTCS()
         local conn
         conn = mouse.Button1Down:Connect(function()
             local obj = mouse.Target
+            -- Filtro para pegar apenas a bola (objetos pequenos)
             if obj and obj:IsA("BasePart") and obj.Size.X < 10 then
                 targetBall = obj
                 if targetBall:FindFirstChild("SelectionHighlight") then targetBall.SelectionHighlight:Destroy() end
@@ -94,22 +123,11 @@ local function OpenLoreTCS()
     end)
 
     AddBtn("2. GOL SUAVE (ANTI-BAN)", UDim2.new(0.05, 0, 0.3, 0), Color3.fromRGB(200, 0, 0), function() SmoothMoveBall() end)
-    
-    -- SISTEMA DE BOOSTER INTEGRADO NO FRAME
-    AddBtn("ATIVAR BOOSTER (FPS/PING)", UDim2.new(0.05, 0, 0.5, 0), Color3.fromRGB(100, 0, 200), ApplyBooster)
-    
+    AddBtn("BOOSTER SKYBOX (FPS)", UDim2.new(0.05, 0, 0.5, 0), Color3.fromRGB(100, 0, 200), BoostSkybox)
     AddBtn("SPEED 50 (SAFE)", UDim2.new(0.05, 0, 0.7, 0), Color3.fromRGB(0, 100, 200), function() player.Character.Humanoid.WalkSpeed = 50 end)
-    
-    local footer = Instance.new("TextLabel", MainFrame)
-    footer.Size = UDim2.new(1, 0, 0, 20)
-    footer.Position = UDim2.new(0, 0, 0.9, 0)
-    footer.Text = "LoreTCS - Draggable & Anti-Kick"
-    footer.TextColor3 = Color3.fromRGB(100, 100, 100)
-    footer.BackgroundTransparency = 1
-    footer.Font = Enum.Font.Code
 end
 
--- [[ TELAS DE SETUP E KEY (DRAGGABLE) ]]
+-- [[ TELA DE SETUP E KEY ]]
 local function StartSetup()
     local SetupF = Instance.new("Frame", ScreenGui)
     SetupF.Size = UDim2.new(0, 250, 0, 100)
@@ -121,7 +139,7 @@ local function StartSetup()
     local S = Instance.new("TextButton", SetupF)
     S.Size = UDim2.new(0.8, 0, 0, 40)
     S.Position = UDim2.new(0.1, 0, 0.3, 0)
-    S.Text = "SALVAR POSIÇÃO GOL"
+    S.Text = "SALVAR GOL"
     Instance.new("UICorner", S)
     S.MouseButton1Click:Connect(function()
         savedGoalPos = player.Character.HumanoidRootPart.Position
@@ -154,8 +172,5 @@ CheckBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 80)
 Instance.new("UICorner", CheckBtn)
 
 CheckBtn.MouseButton1Click:Connect(function()
-    if KeyInput.Text == correctKey then
-        KeyFrame:Destroy()
-        StartSetup()
-    end
+    if KeyInput.Text == correctKey then KeyFrame:Destroy() StartSetup() end
 end)
