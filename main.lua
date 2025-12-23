@@ -1,4 +1,4 @@
-local player = game.Players.LocalPlayer
+ local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
 local pgui = player:WaitForChild("PlayerGui")
 local TweenService = game:GetService("TweenService")
@@ -6,17 +6,18 @@ local targetBall = nil
 local savedGoalPos = nil
 local correctKey = "LORE-RLK-2025"
 
--- [[ ANTIBIÓTICO: ANULADOR DE KICK & BYPASS DE VELOCIDADE ]]
+-- [[ ANTIBIÓTICO: ANULADOR DE KICK SUPREMO ]]
 local oldKick
 oldKick = hookmetamethod(game, "__namecall", function(self, ...)
     local method = getnamecallmethod()
     if not checkcaller() and (method == "Kick" or method == "kick") then
-        print("Bloqueamos uma tentativa de te expulsar, man! rlk")
+        print("Tentativa de Kick anulada com sucesso, rlk!")
         return nil
     end
     return oldKick(self, ...)
 end)
 
+-- [[ BYPASS DE VELOCIDADE NO HUMANOIDE ]]
 local oldIndex
 oldIndex = hookmetamethod(game, "__index", function(t, k)
     if not checkcaller() and t:IsA("Humanoid") and (k == "WalkSpeed" or k == "JumpPower") then
@@ -25,7 +26,7 @@ oldIndex = hookmetamethod(game, "__index", function(t, k)
     return oldIndex(t, k)
 end)
 
--- [[ FUNÇÃO ANTI-VELOCITY (TWEENING) ]]
+-- [[ FUNÇÃO DE MOVIMENTO SUAVE (ANTI-VELOCITY) ]]
 local function SmoothMoveBall()
     if targetBall and savedGoalPos then
         targetBall.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
@@ -33,7 +34,7 @@ local function SmoothMoveBall()
         local goal = {CFrame = CFrame.new(savedGoalPos + Vector3.new(0, 2, 0))}
         local tween = TweenService:Create(targetBall, info, goal)
         tween:Play()
-        print("Bola deslizando pro gol sem detecção! rblx")
+        print("Bola deslizando pro gol, rblx!")
     end
 end
 
@@ -49,11 +50,9 @@ local function OpenLoreTCS()
     MainFrame.Position = UDim2.new(0.5, -150, 0.5, -125)
     MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
     MainFrame.Active = true 
-    MainFrame.Draggable = true -- Ativado para arrastar
+    MainFrame.Draggable = true -- Opção para arrastar ativa
     Instance.new("UICorner", MainFrame)
-    local stroke = Instance.new("UIStroke", MainFrame)
-    stroke.Color = Color3.fromRGB(0, 255, 100)
-    stroke.Thickness = 2
+    Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(0, 255, 100)
 
     local function AddBtn(name, pos, col, fn)
         local b = Instance.new("TextButton", MainFrame)
@@ -67,15 +66,24 @@ local function OpenLoreTCS()
         b.MouseButton1Click:Connect(fn)
     end
 
-    AddBtn("1. SELECIONAR BOLA (CLIQUE)", UDim2.new(0.05, 0, 0.2, 0), Color3.fromRGB(0, 150, 255), function()
+    -- SISTEMA DE SELEÇÃO INTELIGENTE (IGNORA O CAMPO)
+    AddBtn("1. CLICAR NA BOLA", UDim2.new(0.05, 0, 0.2, 0), Color3.fromRGB(0, 150, 255), function()
         local conn
         conn = mouse.Button1Down:Connect(function()
-            if mouse.Target then
-                targetBall = mouse.Target
-                local h = Instance.new("Highlight", targetBall)
-                h.FillColor = Color3.fromRGB(0, 255, 0)
-                conn:Disconnect()
-                print("Bola marcada com sucesso!")
+            local obj = mouse.Target
+            if obj and obj:IsA("BasePart") then
+                -- Filtro: Ignora se o objeto for gigante como o campo
+                if obj.Size.X < 10 and obj.Size.Y < 10 then
+                    targetBall = obj
+                    if targetBall:FindFirstChild("SelectionHighlight") then targetBall.SelectionHighlight:Destroy() end
+                    local h = Instance.new("Highlight", targetBall)
+                    h.Name = "SelectionHighlight"
+                    h.FillColor = Color3.fromRGB(0, 255, 0)
+                    conn:Disconnect()
+                    print("Bola marcada: " .. obj.Name)
+                else
+                    print("Clica na bola, man! Isso ai e o campo.")
+                end
             end
         end)
     end)
@@ -87,24 +95,17 @@ end
 -- [[ TELA DE SETUP (DRAGGABLE) ]]
 local function StartSetup()
     local SetupF = Instance.new("Frame", ScreenGui)
-    SetupF.Size = UDim2.new(0, 250, 0, 120)
+    SetupF.Size = UDim2.new(0, 250, 0, 100)
     SetupF.Position = UDim2.new(0.5, -125, 0.4, 0)
     SetupF.BackgroundColor3 = Color3.fromRGB(20, 40, 20)
     SetupF.Active = true
-    SetupF.Draggable = true -- Ativado para arrastar
+    SetupF.Draggable = true
     Instance.new("UICorner", SetupF)
     
-    local txt = Instance.new("TextLabel", SetupF)
-    txt.Size = UDim2.new(1, 0, 0, 40)
-    txt.Text = "VÁ ATÉ O GOL E SALVE"
-    txt.BackgroundTransparency = 1
-    txt.TextColor3 = Color3.fromRGB(255, 255, 255)
-
     local S = Instance.new("TextButton", SetupF)
     S.Size = UDim2.new(0.8, 0, 0, 40)
-    S.Position = UDim2.new(0.1, 0, 0.5, 0)
-    S.Text = "SALVAR POSIÇÃO GOL"
-    S.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    S.Position = UDim2.new(0.1, 0, 0.3, 0)
+    S.Text = "SALVAR GOL"
     Instance.new("UICorner", S)
     
     S.MouseButton1Click:Connect(function()
@@ -120,7 +121,7 @@ KeyFrame.Size = UDim2.new(0, 300, 0, 200)
 KeyFrame.Position = UDim2.new(0.5, -150, 0.4, 0)
 KeyFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 KeyFrame.Active = true
-KeyFrame.Draggable = true -- Ativado para arrastar
+KeyFrame.Draggable = true
 Instance.new("UICorner", KeyFrame)
 
 local KeyInput = Instance.new("TextBox", KeyFrame)
